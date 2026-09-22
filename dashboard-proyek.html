@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dashboard Monitoring Proyek</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F6F7F9;
+    --panel: #FFFFFF;
+    --border: #E1E4EA;
+    --ink: #182238;
+    --muted: #6B7280;
+    --muted-2: #98A1B1;
+    --navy: #1F3A5F;
+    --navy-soft: #E8EEF6;
+    --ahead: #157A55;
+    --ahead-bg: #E5F5EE;
+    --ontime: #1F3A5F;
+    --ontime-bg: #E8EEF6;
+    --delay: #B0621F;
+    --delay-bg: #FBF0E3;
+    --critical: #A6332F;
+    --critical-bg: #FAE9E8;
+    --issue-open: #6B5FA8;
+    --issue-open-bg: #EFECF8;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12151B;
+      --panel: #191D26;
+      --border: #2A2F3B;
+      --ink: #EDEFF3;
+      --muted: #9AA2B1;
+      --muted-2: #6C7383;
+      --navy: #7EA6DC;
+      --navy-soft: #1D2A3D;
+      --ahead: #4FCB94;
+      --ahead-bg: #12291F;
+      --ontime: #7EA6DC;
+      --ontime-bg: #1B2434;
+      --delay: #E3A159;
+      --delay-bg: #2E2314;
+      --critical: #E38683;
+      --critical-bg: #301B1A;
+      --issue-open: #B7A9F2;
+      --issue-open-bg: #241F35;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12151B; --panel: #191D26; --border: #2A2F3B; --ink: #EDEFF3;
+    --muted: #9AA2B1; --muted-2: #6C7383; --navy: #7EA6DC; --navy-soft: #1D2A3D;
+    --ahead: #4FCB94; --ahead-bg: #12291F; --ontime: #7EA6DC; --ontime-bg: #1B2434;
+    --delay: #E3A159; --delay-bg: #2E2314; --critical: #E38683; --critical-bg: #301B1A;
+    --issue-open: #B7A9F2; --issue-open-bg: #241F35;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  header.top {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 22px;
+    border-bottom: 1px solid var(--border); padding-bottom: 18px;
+  }
+  header.top h1 { font-size: 21px; font-weight: 700; margin: 0 0 4px; letter-spacing: -0.01em; }
+  header.top .sub { color: var(--muted); font-size: 13px; }
+  .top-actions { display: flex; gap: 8px; }
+  button {
+    font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    border-radius: 5px; padding: 8px 14px; border: 1px solid var(--border);
+    background: var(--panel); color: var(--ink); transition: border-color .15s, background .15s;
+  }
+  button:hover { border-color: var(--navy); }
+  button.primary { background: var(--navy); color: var(--panel); border-color: var(--navy); }
+  button.primary:hover { opacity: .9; }
+  button.ghost { border-color: transparent; background: transparent; color: var(--muted); padding: 6px 8px; }
+  button.ghost:hover { color: var(--ink); }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--navy); outline-offset: 1px;
+  }
+
+  .overall { border: 1px solid var(--border); background: var(--panel); border-radius: 6px; padding: 18px 20px; margin-bottom: 16px; display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+  .overall .bar-col { flex: 1; min-width: 240px; }
+  .overall .bar-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .overall .bar-top .label { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .overall .bar-top .pct { font-family: 'IBM Plex Mono'; font-size: 28px; font-weight: 600; line-height: 1; }
+  .overall-track { position: relative; height: 12px; background: var(--navy-soft); border-radius: 6px; overflow: visible; }
+  .overall-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 6px; transition: width .3s; }
+  .overall-fill.ahead { background: var(--ahead); }
+  .overall-fill.ontime { background: var(--ontime); }
+  .overall-fill.delay { background: var(--delay); }
+  .overall-fill.critical { background: var(--critical); }
+  .overall-expected { position: absolute; top: -4px; width: 2px; height: 20px; background: var(--ink); opacity: .4; }
+  .overall-expected-label { position: absolute; top: -20px; font-size: 10.5px; color: var(--muted); white-space: nowrap; transform: translateX(-50%); }
+  .overall .range { font-size: 12px; color: var(--muted-2); margin-top: 8px; }
+  .overall .status-col { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 160px; }
+  .overall .status-col .vs { font-size: 12px; color: var(--muted); }
+  .overall .status-col .vs strong { color: var(--ink); }
+
+  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 24px; }
+  @media (max-width: 860px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+  .kpi { border: 1px solid var(--border); background: var(--panel); border-radius: 6px; padding: 14px 14px 12px; }
+  .kpi .n { font-family: 'IBM Plex Mono'; font-size: 26px; font-weight: 600; line-height: 1; }
+  .kpi .l { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .kpi.ahead .n { color: var(--ahead); }
+  .kpi.delay .n { color: var(--delay); }
+  .kpi.critical .n { color: var(--critical); }
+  .kpi.issue .n { color: var(--issue-open); }
+
+  .grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+
+  .panel { border: 1px solid var(--border); background: var(--panel); border-radius: 6px; overflow: hidden; }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--border); }
+  .panel-head h2 { font-size: 14px; font-weight: 600; margin: 0; }
+  .panel-head .count { color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .panel-body { padding: 4px 0; }
+  .panel-body.pad { padding: 14px 16px; }
+
+  .filters { display: flex; gap: 6px; padding: 10px 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .chip {
+    font-size: 12px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); cursor: pointer; font-weight: 500;
+  }
+  .chip.active { background: var(--navy-soft); border-color: var(--navy); color: var(--navy); }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 11px; text-transform: none; color: var(--muted); font-weight: 600; padding: 8px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 10px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--navy-soft); }
+  .task-name { font-weight: 600; }
+  .task-pic { color: var(--muted); font-size: 12px; }
+  .dates { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .dates .actual { color: var(--ink); }
+
+  .badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .badge.ahead { background: var(--ahead-bg); color: var(--ahead); }
+  .badge.ontime { background: var(--ontime-bg); color: var(--ontime); }
+  .badge.delay { background: var(--delay-bg); color: var(--delay); }
+  .badge.critical { background: var(--critical-bg); color: var(--critical); }
+  .badge.open { background: var(--issue-open-bg); color: var(--issue-open); }
+  .badge.closed { background: var(--ahead-bg); color: var(--ahead); }
+
+  .gantt-cell { width: 190px; }
+  .gantt-track { position: relative; height: 16px; background: var(--navy-soft); border-radius: 3px; overflow: visible; }
+  .gantt-fill { position: absolute; top: 0; left: 0; height: 100%; border-radius: 3px; }
+  .gantt-fill.ahead { background: var(--ahead); }
+  .gantt-fill.ontime { background: var(--ontime); }
+  .gantt-fill.delay { background: var(--delay); }
+  .gantt-fill.critical { background: var(--critical); }
+  .gantt-today { position: absolute; top: -3px; width: 2px; height: 22px; background: var(--ink); opacity: .35; }
+  .gantt-pct { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  .issue-item { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .issue-item:last-child { border-bottom: none; }
+  .issue-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+  .issue-title { font-weight: 600; font-size: 13.5px; }
+  .issue-meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .issue-desc { color: var(--muted); font-size: 12.5px; margin-top: 6px; }
+  .sev { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; position: relative; top: -1px; }
+  .sev.high { background: var(--critical); }
+  .sev.medium { background: var(--delay); }
+  .sev.low { background: var(--muted-2); }
+
+  .empty { padding: 32px 16px; text-align: center; color: var(--muted); font-size: 13px; }
+  .empty .big { font-size: 26px; margin-bottom: 6px; }
+
+  .row-actions { white-space: nowrap; }
+  .row-actions button { padding: 4px 6px; font-size: 11px; border: none; background: none; color: var(--muted-2); }
+  .row-actions button:hover { color: var(--navy); }
+
+  /* modal */
+  .overlay { position: fixed; inset: 0; background: rgba(10,14,20,.45); display: none; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; z-index: 50; }
+  .overlay.show { display: flex; }
+  .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; width: 100%; max-width: 480px; padding: 20px; }
+  .modal h3 { margin: 0 0 14px; font-size: 15px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 5px;
+    background: var(--bg); color: var(--ink); font-family: inherit; font-size: 13px;
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .modal-actions .danger { color: var(--critical); border-color: var(--critical-bg); margin-right: auto; }
+
+  footer.legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 20px; font-size: 11.5px; color: var(--muted); align-items: center; }
+  footer.legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>PROJECT MONITOR - BOILER B5</h1>
+      <div class="sub">Jadwal, progres, dan issue &mdash; diperbarui otomatis dari input kamu</div>
+    </div>
+    <div class="top-actions">
+      <button id="btnAddIssue">+ Issue</button>
+      <button class="primary" id="btnAddTask">+ Task</button>
+    </div>
+  </header>
+
+  <div class="overall" id="overall"></div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Jadwal Task <span class="count" id="taskCount"></span></h2>
+      </div>
+      <div class="filters" id="filters"></div>
+      <div class="panel-body">
+        <div style="overflow-x:auto;">
+        <table id="taskTable">
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Rencana &rarr; Aktual</th>
+              <th>Progres</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="taskBody"></tbody>
+        </table>
+        </div>
+        <div class="empty" id="taskEmpty" style="display:none;">
+          <div class="big">—</div>
+          Belum ada task. Klik <strong>+ Task</strong> untuk mulai.
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Issue Log <span class="count" id="issueCount"></span></h2>
+      </div>
+      <div id="issueList"></div>
+      <div class="empty" id="issueEmpty" style="display:none;">
+        <div class="big">—</div>
+        Belum ada issue tercatat.
+      </div>
+    </div>
+  </div>
+
+  <footer class="legend">
+    <span><span class="dot" style="background:var(--ahead)"></span>Lebih cepat</span>
+    <span><span class="dot" style="background:var(--ontime)"></span>Sesuai jadwal</span>
+    <span><span class="dot" style="background:var(--delay)"></span>Molor</span>
+    <span><span class="dot" style="background:var(--critical)"></span>Molor kritis (&gt;20%)</span>
+    <span style="margin-left:auto;"><button class="ghost" id="btnReset">Reset data contoh</button></span>
+  </footer>
+</div>
+
+<div class="overlay" id="taskOverlay">
+  <div class="modal">
+    <h3 id="taskModalTitle">Tambah Task</h3>
+    <input type="hidden" id="taskId">
+    <div class="field">
+      <label>Nama task</label>
+      <input type="text" id="f_name" placeholder="cth. Instalasi crane PM5">
+    </div>
+    <div class="field">
+      <label>PIC</label>
+      <input type="text" id="f_pic" placeholder="cth. Tim Maintenance">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Rencana mulai</label>
+        <input type="date" id="f_planStart">
+      </div>
+      <div class="field">
+        <label>Rencana selesai</label>
+        <input type="date" id="f_planEnd">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Aktual mulai</label>
+        <input type="date" id="f_actualStart">
+      </div>
+      <div class="field">
+        <label>Aktual selesai (jika sudah)</label>
+        <input type="date" id="f_actualEnd">
+      </div>
+    </div>
+    <div class="field">
+      <label>Progres aktual (%)</label>
+      <input type="number" id="f_progress" min="0" max="100" placeholder="0-100">
+    </div>
+    <div class="modal-actions">
+      <button class="danger" id="btnDeleteTask" style="display:none;">Hapus</button>
+      <button id="btnCancelTask">Batal</button>
+      <button class="primary" id="btnSaveTask">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="issueOverlay">
+  <div class="modal">
+    <h3 id="issueModalTitle">Tambah Issue</h3>
+    <input type="hidden" id="i_id">
+    <div class="field">
+      <label>Judul issue</label>
+      <input type="text" id="i_title" placeholder="cth. Keterlambatan sparepart">
+    </div>
+    <div class="field">
+      <label>Terkait task</label>
+      <select id="i_task"></select>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Severity</label>
+        <select id="i_severity">
+          <option value="low">Rendah</option>
+          <option value="medium">Sedang</option>
+          <option value="high">Tinggi</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="i_status">
+          <option value="open">Open</option>
+          <option value="closed">Closed</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>PIC</label>
+        <input type="text" id="i_pic" placeholder="cth. Purchasing">
+      </div>
+      <div class="field">
+        <label>Tanggal</label>
+        <input type="date" id="i_date">
+      </div>
+    </div>
+    <div class="field">
+      <label>Detail</label>
+      <textarea id="i_desc" rows="3" placeholder="Deskripsi singkat issue"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="danger" id="btnDeleteIssue" style="display:none;">Hapus</button>
+      <button id="btnCancelIssue">Batal</button>
+      <button class="primary" id="btnSaveIssue">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const LS_KEY = 'pm_dashboard_v1';
+  const todayStr = () => new Date().toISOString().slice(0,10);
+
+  const seed = {
+    tasks: [
+      { id: 't1', name: 'Pengadaan sparepart crane', pic: 'Purchasing', planStart: '2026-08-01', planEnd: '2026-08-20', actualStart: '2026-08-03', actualEnd: '2026-08-22', progress: 100 },
+      { id: 't2', name: 'Instalasi crane PM5', pic: 'Tim Maintenance', planStart: '2026-08-21', planEnd: '2026-09-15', actualStart: '2026-08-25', actualEnd: '', progress: 55 },
+      { id: 't3', name: 'Uji fungsi & sertifikasi operator (SILO)', pic: 'HSE / Disnaker', planStart: '2026-09-16', planEnd: '2026-09-25', actualStart: '', actualEnd: '', progress: 0 },
+      { id: 't4', name: 'Kalibrasi consistency transmitter SPC', pic: 'Instrumentasi', planStart: '2026-09-01', planEnd: '2026-09-10', actualStart: '2026-09-01', actualEnd: '2026-09-07', progress: 100 },
+      { id: 't5', name: 'Rekap & analisis buangan plastik Agustus', pic: 'Alim', planStart: '2026-09-05', planEnd: '2026-09-12', actualStart: '2026-09-05', actualEnd: '', progress: 90 }
+    ],
+    issues: [
+      { id: 'i1', title: 'Sparepart bearing crane telat datang dari supplier', task: 't1', severity: 'high', status: 'closed', pic: 'Purchasing', date: '2026-08-15', desc: 'Supplier mundur 2 hari dari komitmen awal, sudah dieskalasi dan diterima 22 Agustus.' },
+      { id: 'i2', title: 'Operator crane belum bersertifikat resmi', pic: 'HSE', task: 't3', severity: 'high', status: 'open', pic: 'HSE / Disnaker', date: '2026-09-10', desc: 'SILO dari Disnaker masih dalam proses pengajuan, berpotensi menahan jadwal uji fungsi.' },
+      { id: 'i3', title: 'Selisih kecil hasil kalibrasi vs baseline lama', task: 't4', severity: 'low', status: 'closed', pic: 'Instrumentasi', date: '2026-09-06', desc: 'Selisih 0.3% masih dalam toleransi, tidak perlu tindakan lanjut.' }
+    ]
+  };
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return JSON.parse(JSON.stringify(seed));
+      return JSON.parse(raw);
+    } catch(e) { return JSON.parse(JSON.stringify(seed)); }
+  }
+  function save() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e) {}
+  }
+
+  let state = load();
+  let activeFilter = 'all';
+
+  function daysBetween(a,b){ return (new Date(b) - new Date(a)) / 86400000; }
+
+  function computeStatus(t) {
+    if (!t.planStart || !t.planEnd) return { key:'ontime', label:'Belum lengkap' };
+    const planLen = Math.max(daysBetween(t.planStart, t.planEnd), 1);
+    const today = todayStr();
+
+    if (t.actualEnd) {
+      const diff = daysBetween(t.planEnd, t.actualEnd); // + = selesai lebih lambat
+      if (diff <= -1) return { key:'ahead', label:'Selesai lebih cepat' };
+      if (diff <= 1) return { key:'ontime', label:'Selesai sesuai jadwal' };
+      const pctLate = diff / planLen * 100;
+      if (pctLate > 20) return { key:'critical', label:`Molor ${Math.round(diff)} hari (kritis)` };
+      return { key:'delay', label:`Molor ${Math.round(diff)} hari` };
+    }
+
+    // belum selesai -> bandingkan progres aktual vs ekspektasi
+    const elapsed = daysBetween(t.planStart, today);
+    const expectedPct = Math.min(100, Math.max(0, elapsed / planLen * 100));
+    const actualPct = Number(t.progress) || 0;
+    const gap = actualPct - expectedPct;
+
+    if (today > t.planEnd && actualPct < 100) {
+      const overdueDays = daysBetween(t.planEnd, today);
+      const pctLate = overdueDays / planLen * 100;
+      if (pctLate > 20) return { key:'critical', label:`Lewat target ${Math.round(overdueDays)} hari (kritis)` };
+      return { key:'delay', label:`Lewat target ${Math.round(overdueDays)} hari` };
+    }
+    if (gap >= 8) return { key:'ahead', label:'Progres lebih cepat' };
+    if (gap <= -20) return { key:'critical', label:'Molor signifikan' };
+    if (gap <= -8) return { key:'delay', label:'Sedikit molor' };
+    return { key:'ontime', label:'Sesuai jadwal' };
+  }
+
+  function fmtDate(d) {
+    if (!d) return '&mdash;';
+    const dt = new Date(d + 'T00:00:00');
+    return dt.toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'2-digit' });
+  }
+
+  function computeOverall() {
+    const valid = state.tasks.filter(t => t.planStart && t.planEnd);
+    if (!valid.length) return null;
+
+    const projStart = valid.reduce((min,t) => t.planStart < min ? t.planStart : min, valid[0].planStart);
+    const projEnd = valid.reduce((max,t) => t.planEnd > max ? t.planEnd : max, valid[0].planEnd);
+    const today = todayStr();
+
+    let sumW = 0, sumActual = 0, sumExpected = 0;
+    valid.forEach(t => {
+      const w = Math.max(daysBetween(t.planStart, t.planEnd), 1); // bobot berdasar durasi rencana
+      const actualPct = t.actualEnd ? 100 : (Number(t.progress) || 0);
+      const elapsed = daysBetween(t.planStart, today);
+      const expectedPct = Math.min(100, Math.max(0, elapsed / w * 100));
+      sumW += w;
+      sumActual += actualPct * w;
+      sumExpected += expectedPct * w;
+    });
+
+    const actualOverall = sumActual / sumW;
+    const expectedOverall = sumExpected / sumW;
+    const gap = actualOverall - expectedOverall;
+
+    let key = 'ontime', label = 'Sesuai jadwal';
+    if (gap >= 8) { key = 'ahead'; label = 'Lebih cepat dari rencana'; }
+    else if (gap <= -20) { key = 'critical'; label = 'Molor signifikan'; }
+    else if (gap <= -8) { key = 'delay'; label = 'Molor dari rencana'; }
+
+    // proyeksi selesai jika kecepatan progres saat ini konstan (kasar, linear)
+    const daysElapsedProj = Math.max(daysBetween(projStart, today), 1);
+    let etaLabel = null;
+    if (actualOverall > 0 && actualOverall < 100) {
+      const rate = actualOverall / daysElapsedProj;
+      const daysToFinish = (100 - actualOverall) / rate;
+      const eta = new Date(new Date(today).getTime() + daysToFinish * 86400000);
+      etaLabel = eta.toISOString().slice(0,10);
+    }
+
+    return { actualOverall, expectedOverall, key, label, projStart, projEnd, etaLabel };
+  }
+
+  function renderOverall() {
+    const o = computeOverall();
+    const el = document.getElementById('overall');
+    if (!o) { el.innerHTML = '<div class="empty" style="width:100%;">Isi tanggal rencana pada task untuk melihat progres keseluruhan.</div>'; return; }
+
+    const actualPct = Math.round(o.actualOverall);
+    const expectedPct = Math.round(o.expectedOverall);
+
+    el.innerHTML = `
+      <div class="bar-col">
+        <div class="bar-top">
+          <span class="label">Progres Keseluruhan Proyek</span>
+          <span class="pct mono">${actualPct}%</span>
+        </div>
+        <div class="overall-track">
+          <div class="overall-fill ${o.key}" style="width:${actualPct}%"></div>
+          <div class="overall-expected" style="left:${expectedPct}%"></div>
+          <div class="overall-expected-label" style="left:${expectedPct}%">rencana: ${expectedPct}%</div>
+        </div>
+        <div class="range mono">${fmtDate(o.projStart)} &mdash; ${fmtDate(o.projEnd)}${o.etaLabel ? ` &middot; proyeksi selesai ${fmtDate(o.etaLabel)} (linear, kasar)` : ''}</div>
+      </div>
+      <div class="status-col">
+        <span class="badge ${o.key}">${o.label}</span>
+        <span class="vs">Aktual <strong>${actualPct}%</strong> vs rencana hari ini <strong>${expectedPct}%</strong></span>
+      </div>
+    `;
+  }
+
+  function render() {
+    renderOverall();
+    renderKpis();
+    renderFilters();
+    renderTasks();
+    renderIssues();
+    populateIssueTaskSelect();
+  }
+
+  function renderKpis() {
+    const statuses = state.tasks.map(computeStatus);
+    const total = state.tasks.length;
+    const ahead = statuses.filter(s=>s.key==='ahead').length;
+    const ontime = statuses.filter(s=>s.key==='ontime').length;
+    const delay = statuses.filter(s=>s.key==='delay').length;
+    const critical = statuses.filter(s=>s.key==='critical').length;
+    const openIssues = state.issues.filter(i=>i.status==='open').length;
+
+    document.getElementById('kpis').innerHTML = `
+      <div class="kpi"><div class="n mono">${total}</div><div class="l">Total task</div></div>
+      <div class="kpi ahead"><div class="n mono">${ahead}</div><div class="l">Lebih cepat</div></div>
+      <div class="kpi"><div class="n mono">${ontime}</div><div class="l">Sesuai jadwal</div></div>
+      <div class="kpi delay"><div class="n mono">${delay + critical}</div><div class="l">Molor (${critical} kritis)</div></div>
+      <div class="kpi issue"><div class="n mono">${openIssues}</div><div class="l">Issue terbuka</div></div>
+    `;
+  }
+
+  function renderFilters() {
+    const opts = [
+      ['all','Semua'], ['ahead','Lebih cepat'], ['ontime','Sesuai jadwal'],
+      ['delay','Molor'], ['critical','Kritis']
+    ];
+    document.getElementById('filters').innerHTML = opts.map(([k,l]) =>
+      `<button class="chip ${activeFilter===k?'active':''}" data-f="${k}">${l}</button>`
+    ).join('');
+    document.querySelectorAll('.chip').forEach(c => {
+      c.onclick = () => { activeFilter = c.dataset.f; render(); };
+    });
+  }
+
+  function renderTasks() {
+    const body = document.getElementById('taskBody');
+    let rows = state.tasks.map(t => ({ t, s: computeStatus(t) }));
+    if (activeFilter !== 'all') rows = rows.filter(r => r.s.key === activeFilter);
+
+    document.getElementById('taskCount').textContent = `(${rows.length})`;
+    document.getElementById('taskEmpty').style.display = rows.length ? 'none' : 'block';
+
+    body.innerHTML = rows.map(({t,s}) => {
+      const planLen = Math.max(daysBetween(t.planStart, t.planEnd), 1);
+      const today = todayStr();
+      let expectedPct = Math.min(100, Math.max(0, daysBetween(t.planStart, today) / planLen * 100));
+      let todayMarker = expectedPct;
+      if (t.actualEnd) todayMarker = null;
+      const pct = Math.min(100, Math.max(0, Number(t.progress)||0));
+
+      return `
+        <tr data-id="${t.id}">
+          <td>
+            <div class="task-name">${escapeHtml(t.name)}</div>
+            <div class="task-pic">${escapeHtml(t.pic||'&mdash;')}</div>
+          </td>
+          <td class="dates mono">
+            ${fmtDate(t.planStart)} &rarr; ${fmtDate(t.planEnd)}<br>
+            <span class="actual">${t.actualStart ? fmtDate(t.actualStart) : '&mdash;'} &rarr; ${t.actualEnd ? fmtDate(t.actualEnd) : (t.actualStart ? 'berjalan' : '&mdash;')}</span>
+          </td>
+          <td class="gantt-cell">
+            <div class="gantt-track">
+              <div class="gantt-fill ${s.key}" style="width:${pct}%"></div>
+              ${todayMarker!==null ? `<div class="gantt-today" style="left:${todayMarker}%"></div>` : ''}
+            </div>
+            <div class="gantt-pct mono">${pct}%</div>
+          </td>
+          <td><span class="badge ${s.key}">${s.label}</span></td>
+          <td class="row-actions">
+            <button data-edit="${t.id}" title="Edit">✎</button>
+            <button data-del="${t.id}" title="Hapus">✕</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    body.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openTaskModal(b.dataset.edit));
+    body.querySelectorAll('[data-del]').forEach(b => b.onclick = () => {
+      if (confirm('Hapus task ini?')) {
+        state.tasks = state.tasks.filter(t => t.id !== b.dataset.del);
+        save(); render();
+      }
+    });
+  }
+
+  function renderIssues() {
+    const list = document.getElementById('issueList');
+    const issues = [...state.issues].sort((a,b) => (a.status==='open'?0:1) - (b.status==='open'?0:1));
+    document.getElementById('issueCount').textContent = `(${state.issues.length})`;
+    document.getElementById('issueEmpty').style.display = issues.length ? 'none' : 'block';
+
+    list.innerHTML = issues.map(i => {
+      const task = state.tasks.find(t => t.id === i.task);
+      return `
+      <div class="issue-item" data-id="${i.id}">
+        <div class="issue-top">
+          <div>
+            <div class="issue-title"><span class="sev ${i.severity}"></span>${escapeHtml(i.title)}</div>
+            <div class="issue-meta">${task ? escapeHtml(task.name) : 'Umum'} &middot; ${escapeHtml(i.pic||'&mdash;')} &middot; ${fmtDate(i.date)}</div>
+          </div>
+          <span class="badge ${i.status}">${i.status==='open'?'Open':'Closed'}</span>
+        </div>
+        ${i.desc ? `<div class="issue-desc">${escapeHtml(i.desc)}</div>` : ''}
+        <div class="row-actions" style="margin-top:6px;">
+          <button data-edit="${i.id}">Edit</button>
+          <button data-del="${i.id}">Hapus</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    list.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => openIssueModal(b.dataset.edit));
+    list.querySelectorAll('[data-del]').forEach(b => b.onclick = () => {
+      if (confirm('Hapus issue ini?')) {
+        state.issues = state.issues.filter(i => i.id !== b.dataset.del);
+        save(); render();
+      }
+    });
+  }
+
+  function populateIssueTaskSelect() {
+    const sel = document.getElementById('i_task');
+    sel.innerHTML = `<option value="">Umum (tidak terkait task tertentu)</option>` +
+      state.tasks.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+  }
+
+  function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // ---- Task modal ----
+  const taskOverlay = document.getElementById('taskOverlay');
+  function openTaskModal(id) {
+    const t = id ? state.tasks.find(x=>x.id===id) : null;
+    document.getElementById('taskModalTitle').textContent = t ? 'Edit Task' : 'Tambah Task';
+    document.getElementById('taskId').value = id || '';
+    document.getElementById('f_name').value = t?.name || '';
+    document.getElementById('f_pic').value = t?.pic || '';
+    document.getElementById('f_planStart').value = t?.planStart || '';
+    document.getElementById('f_planEnd').value = t?.planEnd || '';
+    document.getElementById('f_actualStart').value = t?.actualStart || '';
+    document.getElementById('f_actualEnd').value = t?.actualEnd || '';
+    document.getElementById('f_progress').value = t?.progress ?? '';
+    document.getElementById('btnDeleteTask').style.display = t ? 'inline-block' : 'none';
+    taskOverlay.classList.add('show');
+  }
+  document.getElementById('btnAddTask').onclick = () => openTaskModal(null);
+  document.getElementById('btnCancelTask').onclick = () => taskOverlay.classList.remove('show');
+  taskOverlay.onclick = (e) => { if (e.target === taskOverlay) taskOverlay.classList.remove('show'); };
+
+  document.getElementById('btnSaveTask').onclick = () => {
+    const id = document.getElementById('taskId').value;
+    const name = document.getElementById('f_name').value.trim();
+    if (!name) { alert('Nama task wajib diisi.'); return; }
+    const data = {
+      name,
+      pic: document.getElementById('f_pic').value.trim(),
+      planStart: document.getElementById('f_planStart').value,
+      planEnd: document.getElementById('f_planEnd').value,
+      actualStart: document.getElementById('f_actualStart').value,
+      actualEnd: document.getElementById('f_actualEnd').value,
+      progress: Number(document.getElementById('f_progress').value) || 0
+    };
+    if (id) {
+      const idx = state.tasks.findIndex(t=>t.id===id);
+      state.tasks[idx] = { ...state.tasks[idx], ...data };
+    } else {
+      state.tasks.push({ id: 't'+Date.now(), ...data });
+    }
+    save(); taskOverlay.classList.remove('show'); render();
+  };
+  document.getElementById('btnDeleteTask').onclick = () => {
+    const id = document.getElementById('taskId').value;
+    if (id && confirm('Hapus task ini?')) {
+      state.tasks = state.tasks.filter(t=>t.id!==id);
+      save(); taskOverlay.classList.remove('show'); render();
+    }
+  };
+
+  // ---- Issue modal ----
+  const issueOverlay = document.getElementById('issueOverlay');
+  function openIssueModal(id) {
+    const i = id ? state.issues.find(x=>x.id===id) : null;
+    document.getElementById('issueModalTitle').textContent = i ? 'Edit Issue' : 'Tambah Issue';
+    document.getElementById('i_id').value = id || '';
+    document.getElementById('i_title').value = i?.title || '';
+    populateIssueTaskSelect();
+    document.getElementById('i_task').value = i?.task || '';
+    document.getElementById('i_severity').value = i?.severity || 'medium';
+    document.getElementById('i_status').value = i?.status || 'open';
+    document.getElementById('i_pic').value = i?.pic || '';
+    document.getElementById('i_date').value = i?.date || todayStr();
+    document.getElementById('i_desc').value = i?.desc || '';
+    document.getElementById('btnDeleteIssue').style.display = i ? 'inline-block' : 'none';
+    issueOverlay.classList.add('show');
+  }
+  document.getElementById('btnAddIssue').onclick = () => openIssueModal(null);
+  document.getElementById('btnCancelIssue').onclick = () => issueOverlay.classList.remove('show');
+  issueOverlay.onclick = (e) => { if (e.target === issueOverlay) issueOverlay.classList.remove('show'); };
+
+  document.getElementById('btnSaveIssue').onclick = () => {
+    const id = document.getElementById('i_id').value;
+    const title = document.getElementById('i_title').value.trim();
+    if (!title) { alert('Judul issue wajib diisi.'); return; }
+    const data = {
+      title,
+      task: document.getElementById('i_task').value,
+      severity: document.getElementById('i_severity').value,
+      status: document.getElementById('i_status').value,
+      pic: document.getElementById('i_pic').value.trim(),
+      date: document.getElementById('i_date').value || todayStr(),
+      desc: document.getElementById('i_desc').value.trim()
+    };
+    if (id) {
+      const idx = state.issues.findIndex(i=>i.id===id);
+      state.issues[idx] = { ...state.issues[idx], ...data };
+    } else {
+      state.issues.push({ id: 'i'+Date.now(), ...data });
+    }
+    save(); issueOverlay.classList.remove('show'); render();
+  };
+  document.getElementById('btnDeleteIssue').onclick = () => {
+    const id = document.getElementById('i_id').value;
+    if (id && confirm('Hapus issue ini?')) {
+      state.issues = state.issues.filter(i=>i.id!==id);
+      save(); issueOverlay.classList.remove('show'); render();
+    }
+  };
+
+  document.getElementById('btnReset').onclick = () => {
+    if (confirm('Reset ke data contoh? Semua perubahan akan hilang.')) {
+      state = JSON.parse(JSON.stringify(seed));
+      save(); render();
+    }
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>
